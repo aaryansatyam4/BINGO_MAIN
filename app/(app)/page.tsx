@@ -7,6 +7,9 @@ import { listLeads } from "@/global/crm";
 import { listProjects } from "@/build/developer";
 import { listCreatives } from "@/studio/creative";
 import { connectionHealth } from "@/web/health";
+import { vizData } from "@/web/viz-data";
+import { KnowledgeSphere } from "../viz/sphere";
+import { SystemTree } from "../viz/tree";
 import { AskBox, AutoRefresh, Submit } from "../client";
 import { decideApprovalAction, emergencyStop } from "../actions";
 import { Ago, Badge, Card, Empty, Status } from "../ui";
@@ -15,7 +18,8 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const ctx = getCtx();
-  const [owner, approvals, workflows, activity, health, leads, projects, creatives, stopped, incidents] = await Promise.all([
+  const [viz, owner, approvals, workflows, activity, health, leads, projects, creatives, stopped, incidents] = await Promise.all([
+    vizData(ctx),
     getOwner(ctx),
     listApprovals(ctx),
     listWorkflows(ctx, 30),
@@ -32,18 +36,28 @@ export default async function Home() {
   return (
     <>
       <AutoRefresh ms={8000} />
-      <div style={{ margin: "8px 0 26px" }}>
-        <h1 style={{ fontSize: "2.1rem" }}>Good to see you{owner.name && owner.name !== "Owner" ? `, ${owner.name.split(" ")[0]}` : ""}.</h1>
-        <p className="muted">Give BINGO an objective. It plans across research, design, code, outreach, meetings and reports — and asks you before anything important happens.</p>
-        <AskBox big />
-      </div>
-
-      <div className="grid g4">
-        <div className="card"><div className="faint">Waiting for you</div><div className="kpi">{approvals.length + incidents.length}</div></div>
-        <div className="card"><div className="faint">Active workflows</div><div className="kpi">{active.length}</div></div>
-        <div className="card"><div className="faint">Distributor leads</div><div className="kpi">{leads.length}</div><div className="faint">{leads.filter((l) => l.stage === "Meeting Confirmed").length} meetings confirmed</div></div>
-        <div className="card"><div className="faint">Live sites · creatives in review</div><div className="kpi">{projects.filter((p) => p.status === "live").length} · {creatives.filter((c) => c.status === "in_review").length}</div></div>
-      </div>
+      <section className="hero">
+        <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+          <div className="row between" style={{ padding: "14px 18px 0" }}>
+            <span className="hud-title">Knowledge sphere · live</span>
+            <span className="legend"><span><i style={{ background: "#39ff9c" }} />done</span><span><i style={{ background: "#ffb020" }} />waiting</span><span><i style={{ background: "#ff3b5c" }} />attention</span><span><i style={{ background: "#38d6ff" }} />info</span></span>
+          </div>
+          <KnowledgeSphere data={viz} height={540} />
+          <div className="scan" aria-hidden="true" />
+        </div>
+        <div>
+          <div className="hud-title" style={{ marginBottom: 8 }}>BINGO · AI business operating system</div>
+          <h1 style={{ fontSize: "2.3rem" }}>Good to see you{owner.name && owner.name !== "Owner" ? `, ${owner.name.split(" ")[0]}` : ""}.</h1>
+          <p className="muted">Give BINGO an objective. It plans across research, design, code, outreach, meetings and reports — and asks you before anything important happens.</p>
+          <AskBox big />
+          <div className="grid g2" style={{ marginTop: 16 }}>
+            <div className="card"><div className="faint hud">WAITING FOR YOU</div><div className="kpi">{approvals.length + incidents.length}</div></div>
+            <div className="card"><div className="faint hud">ACTIVE WORKFLOWS</div><div className="kpi">{active.length}</div></div>
+            <div className="card"><div className="faint hud">DISTRIBUTOR LEADS</div><div className="kpi">{leads.length}</div><div className="faint">{leads.filter((l) => l.stage === "Meeting Confirmed").length} meetings confirmed</div></div>
+            <div className="card"><div className="faint hud">LIVE SITES · CREATIVES</div><div className="kpi">{projects.filter((p) => p.status === "live").length} · {creatives.filter((c) => c.status === "in_review").length}</div></div>
+          </div>
+        </div>
+      </section>
 
       <div className="section-title"><h2>Needs your decision</h2><span className="faint">BINGO never sends, publishes or commits without this</span></div>
       <div className="stack">
@@ -69,6 +83,11 @@ export default async function Home() {
             </form>
           </div>
         )) : incidents.length ? null : <Card><Empty>Nothing needs you right now.</Empty></Card>}
+      </div>
+
+      <div className="section-title"><h2>System tree</h2><span className="faint">Every leaf is a real record — hover for details, click to open</span></div>
+      <div className="card" style={{ padding: 8 }}>
+        <SystemTree data={viz} />
       </div>
 
       <div className="grid g2" style={{ marginTop: 26 }}>

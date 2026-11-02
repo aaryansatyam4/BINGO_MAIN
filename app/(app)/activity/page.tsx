@@ -4,17 +4,22 @@ import { listWorkflows } from "@/orchestrator/workflow";
 import { jobStatus } from "@/orchestrator/scheduler";
 import { AutoRefresh, Submit } from "../../client";
 import { runNow } from "../../actions";
+import { vizData } from "@/web/viz-data";
+import { SystemTree } from "../../viz/tree";
 import { Ago, Card, PageHead, Status } from "../../ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
   const ctx = getCtx();
-  const [activity, workflows, jobs] = await Promise.all([recentActivity(ctx, 200), listWorkflows(ctx, 100), jobStatus(ctx)]);
+  const [activity, workflows, jobs, viz] = await Promise.all([recentActivity(ctx, 200), listWorkflows(ctx, 100), jobStatus(ctx), vizData(ctx)]);
   return (
     <>
       <AutoRefresh ms={10000} />
       <PageHead title="Activity" sub="Everything BINGO did, with real outcomes — including what happened while you were away." action={<form action={runNow}><Submit className="btn">Run scheduler now</Submit></form>} />
+      <div className="card" style={{ padding: 8, marginBottom: 14 }}>
+        <SystemTree data={viz} />
+      </div>
       <div className="grid g2">
         <Card title="24/7 scheduler" action={<span className="faint">heartbeat <Ago iso={jobs.heartbeat} /></span>}>
           {jobs.jobs.length ? (
