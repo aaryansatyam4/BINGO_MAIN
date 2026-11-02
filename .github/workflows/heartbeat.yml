@@ -1,0 +1,13 @@
+# Optional fallback heartbeat for plans without per-minute Vercel Cron.
+# Add repository secrets BINGO_URL and CRON_SECRET to enable it.
+name: BINGO heartbeat
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    if: ${{ vars.BINGO_HEARTBEAT == 'on' }}
+    steps:
+      - run: curl -fsS -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" "${{ secrets.BINGO_URL }}/api/cron/tick"
